@@ -1,7 +1,6 @@
 const {
   ActionRowBuilder,
   EmbedBuilder,
-  InteractionResponseFlags,
   ModalBuilder,
   TextInputStyle,
 } = require('discord.js');
@@ -22,12 +21,13 @@ async function handleSetup(interaction, type, selectedChannelId, state, saveConf
       command: interaction.commandName,
       userTag: interaction.user.tag,
     });
-    await interaction.reply({ content: 'هذا الأمر مخصّص للمالِك فقط.', flags: InteractionResponseFlags.Ephemeral });
+    await interaction.reply({ content: 'هذا الأمر مخصّص للمالِك فقط.', ephemeral: true });
     return;
   }
 
-  await interaction.deferReply({ flags: InteractionResponseFlags.Ephemeral });
+  await interaction.deferReply({ ephemeral: true });
 
+  const interactionChannel = interaction.channel || await interaction.guild.channels.fetch(interaction.channelId).catch(() => null);
   let selectedChannel = null;
   if (selectedChannelId) {
     if (type === 'rating') {
@@ -43,9 +43,13 @@ async function handleSetup(interaction, type, selectedChannelId, state, saveConf
   }
 
   const payload = type === 'rating' ? createRatingPanel(interaction.client) : createSuggestionPanel(interaction.client);
-  await interaction.channel.send(payload);
+  if (!interactionChannel || !interactionChannel.send) {
+    throw new Error('Unable to find a valid text channel to send the panel.');
+  }
 
-  const targetChannelLabel = selectedChannel
+  await interactionChannel.send(payload);
+
+  const targetChannelLabel = selectedChannel?.id
     ? `<#${selectedChannel.id}>`
     : type === 'rating'
       ? (state.currentRatingChannelId ? `<#${state.currentRatingChannelId}>` : 'الروم الحالي')
@@ -93,7 +97,7 @@ async function handleRatingModal(interaction, amount, currentRatingChannelId) {
     .setFooter({ text: 'AERIX Feedback • تقييمات المجتمع' });
 
   await channel.send({ embeds: [embed], allowedMentions: { users: [interaction.user.id] } });
-  await interaction.reply({ content: 'تم إرسال تقييمك، شكرًا لرأيك ⭐', flags: InteractionResponseFlags.Ephemeral });
+  await interaction.reply({ content: 'تم إرسال تقييمك، شكرًا لرأيك ⭐', ephemeral: true });
 }
 
 async function handleSuggestionModal(interaction, currentSuggestionChannelId) {
@@ -117,7 +121,7 @@ async function handleSuggestionModal(interaction, currentSuggestionChannelId) {
     .setFooter({ text: 'AERIX Feedback • اقتراحات المجتمع' });
 
   await channel.send({ embeds: [embed], allowedMentions: { users: [interaction.user.id] } });
-  await interaction.reply({ content: 'تم إرسال اقتراحك للفريق، شكرًا لك 💡', flags: InteractionResponseFlags.Ephemeral });
+  await interaction.reply({ content: 'تم إرسال اقتراحك للفريق، شكرًا لك 💡', ephemeral: true });
 }
 
 module.exports = {
