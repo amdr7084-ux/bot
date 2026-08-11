@@ -7,7 +7,7 @@
 
 ## Environment variables
 
-- `DISCORD_TOKEN`: توكن البوت.
+- `DISCORD_TOKEN`, `BOT_TOKEN`, or `TOKEN`: توكن البوت.
 - `OWNER_ID`: آيدي صاحب البوت المسموح له فقط باستخدام الأوامر.
 - `GUILD_ID`: آيدي السيرفر للتسجيل الفوري للأوامر.
 - `RATING_CHANNEL_ID`: روم نتائج التقييم، اختياري.
