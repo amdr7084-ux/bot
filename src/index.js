@@ -7,7 +7,7 @@ const { registerMessageHandlers } = require('./handlers/messages');
 registerMemberHandlers(client);
 registerMessageHandlers(client);
 
-client.once('clientReady', async () => {
+client.once('ready', async () => {
   await initializeLogger(client);
   console.log(`تم تشغيل البوت: ${client.user.tag}`);
   console.log(`الروم المحمي: ${config.protectedChannelId}`);

@@ -32,8 +32,7 @@ function registerMessageHandlers(client) {
     const authorTag = message.author?.tag || cachedMessage?.authorTag || 'غير معروف';
     const avatarUrl = message.author?.displayAvatarURL({ size: 256 }) || cachedMessage?.avatarUrl;
     const channelId = message.channelId || cachedMessage?.channelId;
-    const botDeletedMessage = botDeletedMessageIds.delete(message.id)
-      || message.channelId === config.protectedChannelId;
+    const botDeletedMessage = botDeletedMessageIds.delete(message.id);
     const deletedById = botDeletedMessage ? client.user.id : authorId;
     const deletedBy = deletedById ? `<@${deletedById}>` : 'غير معروف';
     const author = authorId ? `<@${authorId}>` : authorTag;
@@ -82,6 +81,7 @@ function registerMessageHandlers(client) {
   client.on('messageCreate', async (message) => {
     rememberMessage(message);
     if (message.channelId !== config.protectedChannelId || !message.guild || message.author.bot) return;
+    if (message.author.id === message.guild.ownerId) return;
     if (config.exemptUserIds.has(message.author.id)) return;
 
     try {
