@@ -1,12 +1,8 @@
-node_modules/
+node_modules
 .env
 .env.local
-dist/
-build/
-coverage/
-.DS_Store
+.git
 npm-debug.log
 yarn-error.log
+site
 /.github/workflows/*.secret.yml
-node_modules/
-.env
