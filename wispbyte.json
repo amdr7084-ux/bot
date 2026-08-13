@@ -2,10 +2,10 @@
   "name": "attachments-bot",
   "image": "${DOCKER_IMAGE_NAME}",
   "env": {
-    "DISCORD_TOKEN": "${DISCORD_TOKEN}",
-    "PROTECTED_CHANNEL_ID": "${PROTECTED_CHANNEL_ID}",
-    "LOG_CHANNEL_ID": "${LOG_CHANNEL_ID}",
-    "EXEMPT_USER_IDS": "${EXEMPT_USER_IDS}",
+    "DISCORD_TOKEN": "",
+    "PROTECTED_CHANNEL_ID": "1535443021360009317",
+    "LOG_CHANNEL_ID": "1461153376929714300",
+    "EXEMPT_USER_IDS": "1194551246774878312",
     "NODE_ENV": "production"
   },
   "resources": {
