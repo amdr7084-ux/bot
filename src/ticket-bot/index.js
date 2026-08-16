@@ -96,12 +96,9 @@ client.on('interactionCreate', async (interaction) => {
         return;
       }
 
-      // Config commands: check admin role or MANAGE_GUILD
-      const guildCfg = store.getGuildConfig(interaction.guildId);
-      const allowedRole = guildCfg.allowedRoleId;
-      const isAllowed = interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) || (allowedRole && interaction.member.roles.cache.has(allowedRole));
-      if (!isAllowed) {
-        await interaction.reply({ content: 'لا تملك صلاحية تشغيل أوامر الإعداد. يجب أن تكون لديك صلاحية Manage Server أو الدور المسموح.', ephemeral: true });
+      // Config commands: only the server owner may run these commands
+      if (interaction.user.id !== interaction.guild.ownerId) {
+        await interaction.reply({ content: 'هذه الأوامر مقصورة على Owner السيرفر فقط.', ephemeral: true });
         return;
       }
 
@@ -130,13 +127,14 @@ client.on('interactionCreate', async (interaction) => {
         return;
       }
     } else if (commandName === 'call') {
+      // /call is restricted to server owner
+      if (interaction.user.id !== interaction.guild.ownerId) {
+        await interaction.reply({ content: 'هذا الأمر مقصور على Owner السيرفر فقط.', ephemeral: true });
+        return;
+      }
       const target = interaction.options.getUser('user');
       const channel = interaction.options.getChannel('channel');
       const message = interaction.options.getString('message');
-      if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.roles.cache.has(store.getGuildConfig(interaction.guildId).allowedRoleId)) {
-        await interaction.reply({ content: 'لا تملك صلاحية استخدام هذا الأمر.', ephemeral: true });
-        return;
-      }
       try {
         await channel.send({ content: `<@${target.id}> ${message}` });
         await interaction.reply({ content: 'تم الإرسال.', ephemeral: true });
@@ -145,14 +143,13 @@ client.on('interactionCreate', async (interaction) => {
         await interaction.reply({ content: 'تعذر إرسال الرسالة إلى القناة المحددة.', ephemeral: true });
       }
     }
-  } else if (interaction.isButton()) {
+    } else if (interaction.isButton()) {
     const [action, ownerId] = interaction.customId.split(':');
     if (action !== 'close_ticket') return;
     const guildCfg = store.getGuildConfig(interaction.guildId);
-    const isOwner = interaction.user.id === ownerId;
-    const isStaff = guildCfg.staffRoleId && interaction.member.roles.cache.has(guildCfg.staffRoleId);
-    if (!isOwner && !isStaff) {
-      await interaction.reply({ content: 'لا تملك صلاحية إغلاق هذه التذكرة.', ephemeral: true });
+    // Only the server owner may close tickets
+    if (interaction.user.id !== interaction.guild.ownerId) {
+      await interaction.reply({ content: 'فقط Owner السيرفر يمكنه إغلاق التذاكر.', ephemeral: true });
       return;
     }
     await interaction.reply({ content: 'جاري إغلاق التذكرة...', ephemeral: true });
