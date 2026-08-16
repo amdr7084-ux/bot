@@ -84,18 +84,68 @@ function registerMessageHandlers(client) {
     if (message.author.id === message.guild.ownerId) return;
     if (config.exemptUserIds.has(message.author.id)) return;
 
+    const fullContent = message.content || '';
+    const hasForbiddenPatterns = Array.isArray(config.forbiddenPatterns) && config.forbiddenPatterns.length > 0;
+
+    // Determine whether this message should be enforced.
+    let matchesForbidden = false;
+    if (hasForbiddenPatterns) {
+      matchesForbidden = config.forbiddenPatterns.some((pattern) => {
+        if (!pattern) return false;
+        try {
+          const re = new RegExp(pattern, 'i');
+          return re.test(fullContent);
+        } catch (err) {
+          // If pattern is not a valid regex, fall back to substring check
+          return fullContent.toLowerCase().includes(pattern.toLowerCase());
+        }
+      });
+    }
+
+    // Require configured forbidden patterns to enable enforcement to avoid accidental mass actions.
+    if (!hasForbiddenPatterns) {
+      // No patterns configured — skip enforcement. Admin should set FORBIDDEN_PATTERNS in env to enable.
+      return;
+    }
+
+    const shouldEnforce = matchesForbidden;
+    if (!shouldEnforce) return;
+
     try {
       botDeletedMessageIds.add(message.id);
       void message.delete().catch((error) => {
         console.error(`تعذر حذف رسالة ${message.id}:`, error.message);
       });
-      void message.guild.members.ban(message.author.id, {
-        deleteMessageSeconds: 24 * 60 * 60,
-        reason: 'رسالة في الروم المحمي',
-      }).catch((error) => {
-        console.error(`تعذر حظر ${message.author.tag}:`, error.message);
-      });
-      console.log(`تم حظر ${message.author.tag} (${message.author.id})`);
+
+      const embed = createLogEmbed(
+        matchesForbidden ? 'محاولة أمر ممنوع' : 'رسالة في الروم المحمي',
+        0xe74c3c,
+        `تمت معالجة رسالة من <@${message.author.id}> في <#${message.channelId}>`,
+        message.author.displayAvatarURL?.({ size: 256 }),
+        [{ name: 'المحتوى', value: (fullContent || '[لا يوجد محتوى]').slice(0, 1024) }],
+      );
+
+      // Send log to configured log channel (if any)
+      void sendLog(message.guild, embed, [message.author.id]);
+
+      // Take action according to config.protectedAction: 'ban' or 'warn'
+      if (config.protectedAction === 'ban') {
+        void message.guild.members.ban(message.author.id, {
+          deleteMessageSeconds: 24 * 60 * 60,
+          reason: matchesForbidden ? 'أمر ممنوع في الروم المحمي' : 'رسالة في الروم المحمي',
+        }).then(() => {
+          console.log(`تم حظر ${message.author.tag} (${message.author.id})`);
+        }).catch((error) => {
+          console.error(`تعذر حظر ${message.author.tag}:`, error.message);
+        });
+      } else {
+        // Default/safer action: warn the user via DM and log the attempt.
+        void message.author.send({
+          embeds: [createLogEmbed('تحذير - أمر ممنوع', 0xf39c12, 'تم حذف رسالتك لأنها تحتوي على أمر ممنوع أو لا يسمح بالنشر في هذا الروم.')],
+        }).catch(() => {
+          // Ignore DM failures (user may have DMs closed)
+        });
+      }
     } catch (error) {
       console.error(`تعذر تنفيذ حماية ${message.author.tag}:`, error.message);
     }
